@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-// TODO add test for find by mime type
-
 func buildMetadataTestResults() *pgxmock.Rows {
 	/*
 		id  date        tags           location e.id e.runtime e.resolution e.mimetype e.hash   l.id l.did l.type l.path
@@ -228,9 +226,9 @@ func TestDbMetadataServer_Find(t *testing.T) {
 
 	ms := NewMetadataServer(caller)
 	query := MetadataQuery{
-		Tags: []string{"foo", "bar"},
+		Tags:      []string{"foo", "bar"},
 		StartDate: time.Now(),
-		EndDate: time.Now(),
+		EndDate:   time.Now(),
 		LocatedAt: []string{"home"},
 	}
 	metadata, err := ms.Find(ctx, query)
@@ -293,9 +291,9 @@ func TestDbMetadataServer_FindMultipleLocations(t *testing.T) {
 
 	ms := NewMetadataServer(caller)
 	query := MetadataQuery{
-		Tags: []string{"foo", "bar"},
+		Tags:      []string{"foo", "bar"},
 		StartDate: time.Now(),
-		EndDate: time.Now(),
+		EndDate:   time.Now(),
 		LocatedAt: []string{"home", "work"},
 	}
 	metadata, err := ms.Find(ctx, query)
@@ -343,6 +341,29 @@ func TestDbMetadataServer_FindByTags(t *testing.T) {
 
 	ms := NewMetadataServer(caller)
 	metadata, err := ms.FindByTags(ctx, []string{"foo", "bar"})
+
+	if err != nil {
+		t.Fatalf("Error returned from find by tags: %v", err)
+	}
+
+	if len(metadata) != 2 {
+		t.Errorf("Expected 2 metadata records but got: %d", len(metadata))
+	}
+}
+
+func TestDbMetadataServer_FindMimeType(t *testing.T) {
+	caller, ctx := createTestDBCaller()
+	caller.Conn.ExpectQuery(`SELECT metadata\.id, date_captured, location, tags, 
+			encoding\.id, encoding\.runtime, encoding\.resolution, encoding\.mime_type, encoding\.file_hash,
+			locator\.id, locator\.source, locator\.path
+ 		FROM metadata 
+			INNER JOIN encoding on metadata\.id = encoding\.metadata_id
+    		INNER JOIN locator on encoding\.id = locator\.encoding_id
+ 		WHERE \(encoding\.mime_type = \$1 OR encoding\.mime_type = \$2\)
+ 		ORDER BY metadata\.id, encoding\.id, locator\.id ASC`).WillReturnRows(buildMetadataTestResults())
+
+	ms := NewMetadataServer(caller)
+	metadata, err := ms.FindByMimeType(ctx, []string{MimeJPEG, MimeTIFF})
 
 	if err != nil {
 		t.Fatalf("Error returned from find by tags: %v", err)

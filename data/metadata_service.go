@@ -54,6 +54,7 @@ type Metadata struct {
 	Location string
 	Data     []Encoding
 }
+
 /*
 SELECT metadata.id, date_captured, location, tags,
 			encoding.id, encoding.runtime, encoding.resolution, encoding.mime_type, encoding.file_hash,
@@ -72,16 +73,16 @@ metadata 1 would have 2 encodings, where encoding 1 had two locations.
 metadata 2 would have 2 encodings, with one location each
 metadata 3 would have 1 encoding in one location.
 
- */
+*/
 
 type Encoding struct {
 	ID         int64
-	Metadata   Metadata // -> metadata id on the table.
+	Metadata   Metadata      // -> metadata id on the table.
 	Runtime    time.Duration // file specific
-	Locator    []Locator  // file specific - a copy of the same data stream
-	Resolution Resolution // file specific
-	MimeType   string     // file specific
-	Hash       string     // file specific
+	Locator    []Locator     // file specific - a copy of the same data stream
+	Resolution Resolution    // file specific
+	MimeType   string        // file specific
+	Hash       string        // file specific
 }
 
 // MetadataQuery represents the parameters passed to the Find
@@ -102,7 +103,7 @@ type MetadataServer interface {
 	FindById(ctx context.Context, id int64) (*Metadata, error)
 	FindByTags(ctx context.Context, tags []string) ([]Metadata, error)
 	FindByDateRange(ctx context.Context, start, end time.Time) ([]Metadata, error)
-	// TODO add FindByMimeType
+	FindByMimeType(ctx context.Context, mimeTypes []string) ([]Metadata, error)
 	FindByLocation(ctx context.Context, location string) ([]Metadata, error)
 
 	// Create stores new metadata and will assign a new ID to that
@@ -123,6 +124,7 @@ func NewMetadataServer(db DBCaller) MetadataServer {
 type dbMetadataServer struct {
 	db DBCaller
 }
+
 /*
 SELECT metadata.id, date_captured, location, tags,
 			encoding.id, encoding.runtime, encoding.resolution, encoding.mime_type, encoding.file_hash,
@@ -132,11 +134,11 @@ SELECT metadata.id, date_captured, location, tags,
     		INNER JOIN locator on encoding.id = locator.encoding_id
 		WHERE (location = $1 OR location = $2 OR location = $3)
 		ORDER BY metadata.id, encoding.id, locator.id ASC
- */
+*/
 func (dms dbMetadataServer) processRows(rows pgx.Rows) ([]Metadata, error) {
 	var result []Metadata
 	var currentID int64 = -1
-	var currentEncodingID int64 =-1
+	var currentEncodingID int64 = -1
 
 	var currentMetadata Metadata
 	var currentEncoding Encoding
@@ -162,49 +164,48 @@ func (dms dbMetadataServer) processRows(rows pgx.Rows) ([]Metadata, error) {
 		case currentID < 0:
 			currentID = ID
 			currentMetadata = Metadata{
-				ID: ID,
-				Date: date,
+				ID:       ID,
+				Date:     date,
 				Location: location,
-				Tags: foundTags,
+				Tags:     foundTags,
 			}
 			currentEncoding = Encoding{
-				ID: encodingID,
-				Runtime: runtime,
+				ID:         encodingID,
+				Runtime:    runtime,
 				Resolution: resolution,
-				MimeType: mimeType,
-				Hash: fileHash,
+				MimeType:   mimeType,
+				Hash:       fileHash,
 			}
 			currentEncodingID = encodingID
 		case currentID != ID:
 			currentMetadata.Data = append(currentMetadata.Data, currentEncoding)
 			result = append(result, currentMetadata)
 			currentMetadata = Metadata{
-				ID: ID,
-				Date: date,
+				ID:       ID,
+				Date:     date,
 				Location: location,
-				Tags: foundTags,
+				Tags:     foundTags,
 			}
 			currentID = ID
 			currentEncoding = Encoding{
-				ID: encodingID,
-				Runtime: runtime,
+				ID:         encodingID,
+				Runtime:    runtime,
 				Resolution: resolution,
-				MimeType: mimeType,
-				Hash: fileHash,
+				MimeType:   mimeType,
+				Hash:       fileHash,
 			}
 			currentEncodingID = encodingID
 		case currentEncodingID != encodingID:
 			currentMetadata.Data = append(currentMetadata.Data, currentEncoding)
 			currentEncoding = Encoding{
-				ID: encodingID,
-				Runtime: runtime,
+				ID:         encodingID,
+				Runtime:    runtime,
 				Resolution: resolution,
-				MimeType: mimeType,
-				Hash: fileHash,
+				MimeType:   mimeType,
+				Hash:       fileHash,
 			}
 			currentEncodingID = encodingID
 		}
-
 
 		currentEncoding.Locator = append(currentEncoding.Locator, &fileSystemLocator{
 			path,
@@ -245,6 +246,13 @@ func (dms dbMetadataServer) Find(ctx context.Context, query MetadataQuery) ([]Me
 		builder = builder.AtLocations(len(query.LocatedAt))
 		for _, l := range query.LocatedAt {
 			args = append(args, l)
+		}
+	}
+
+	if len(query.MimeType) > 0 {
+		builder = builder.ByMimeTypes(len(query.MimeType))
+		for _, m := range query.LocatedAt {
+			args = append(args, m)
 		}
 	}
 
@@ -298,6 +306,14 @@ func (dms dbMetadataServer) FindByDateRange(ctx context.Context, start, end time
 func (dms dbMetadataServer) FindByLocation(ctx context.Context, location string) ([]Metadata, error) {
 	query := MetadataQuery{
 		LocatedAt: []string{location},
+	}
+
+	return dms.Find(ctx, query)
+}
+
+func (dms dbMetadataServer) FindByMimeType(ctx context.Context, mimeTypes []string) ([]Metadata, error) {
+	query := MetadataQuery{
+		MimeType: mimeTypes,
 	}
 
 	return dms.Find(ctx, query)
