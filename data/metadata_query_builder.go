@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// TODO add encoding id for control-break on new encodings
 const (
 	queryBase = `SELECT metadata.id, date_captured, location, tags,
 		encoding.id, encoding.runtime, encoding.resolution, encoding.mime_type, encoding.file_hash,
@@ -16,18 +15,16 @@ const (
 	orderClause = `ORDER BY metadata.id, encoding.id, locator.id ASC`
 )
 
-// TODO add mimetype query
-
 // MetadataQueryBuilder builds a metadata query in a fluent manner.
 type MetadataQueryBuilder struct {
-	b strings.Builder
+	b   strings.Builder
 	idx int
 }
 
 // NewMetadataQueryBuilder returns a query builder.
 func NewMetadataQueryBuilder() *MetadataQueryBuilder {
 	return &MetadataQueryBuilder{
-		b: strings.Builder{},
+		b:   strings.Builder{},
 		idx: 1,
 	}
 }
@@ -51,7 +48,7 @@ func (qb *MetadataQueryBuilder) addFrontMatter() *MetadataQueryBuilder {
 func (qb *MetadataQueryBuilder) AddTags(ntags int) *MetadataQueryBuilder {
 	qb.addFrontMatter()
 
-	for i := qb.idx; i < qb.idx + ntags; i++ {
+	for i := qb.idx; i < qb.idx+ntags; i++ {
 		qb.b.WriteString(fmt.Sprintf("$%d = ANY(tags) ", i))
 		if i < (qb.idx + ntags - 1) {
 			qb.b.WriteString("AND ")
@@ -67,7 +64,7 @@ func (qb *MetadataQueryBuilder) AddTags(ntags int) *MetadataQueryBuilder {
 func (qb *MetadataQueryBuilder) BetweenDates() *MetadataQueryBuilder {
 	qb.addFrontMatter()
 
-	qb.b.WriteString(fmt.Sprintf(`date_captured BETWEEN $%d AND $%d `, qb.idx, qb.idx + 1))
+	qb.b.WriteString(fmt.Sprintf(`date_captured BETWEEN $%d AND $%d `, qb.idx, qb.idx+1))
 	qb.idx = qb.idx + 2
 
 	return qb
@@ -87,7 +84,7 @@ func (qb *MetadataQueryBuilder) AtLocations(nlocs int) *MetadataQueryBuilder {
 	qb.addFrontMatter()
 
 	qb.b.WriteString("(")
-	for i := qb.idx; i < qb.idx + nlocs; i++ {
+	for i := qb.idx; i < qb.idx+nlocs; i++ {
 		qb.b.WriteString(fmt.Sprintf("location = $%d", i))
 		if i < (qb.idx + nlocs - 1) {
 			qb.b.WriteString(" OR ")
@@ -103,7 +100,7 @@ func (qb *MetadataQueryBuilder) AtLocations(nlocs int) *MetadataQueryBuilder {
 func (qb *MetadataQueryBuilder) ByMimeTypes(ntypes int) *MetadataQueryBuilder {
 	qb.addFrontMatter()
 	qb.b.WriteString("(")
-	for i := qb.idx; i < qb.idx + ntypes; i++ {
+	for i := qb.idx; i < qb.idx+ntypes; i++ {
 		qb.b.WriteString(fmt.Sprintf("encoding.mime_type = $%d", i))
 		if i < (qb.idx + ntypes - 1) {
 			qb.b.WriteString(" OR ")

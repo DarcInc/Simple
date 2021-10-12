@@ -1,16 +1,16 @@
-package simple
+package model
 
 import (
-	"Simple/data"
 	"context"
-	"io"
 	"testing"
 	"time"
+
+	"github.com/darcinc/Simple/data"
 )
 
 type mockMetadataServer struct {
-	results []data.Metadata
-	single *data.Metadata
+	results     []data.Metadata
+	single      *data.Metadata
 	returnError error
 }
 
@@ -34,6 +34,10 @@ func (mms mockMetadataServer) FindByLocation(_ context.Context, _ string) ([]dat
 	return mms.results, mms.returnError
 }
 
+func (mms mockMetadataServer) FindByMimeType(_ context.Context, _ []string) ([]data.Metadata, error) {
+	return mms.results, mms.returnError
+}
+
 func (mms mockMetadataServer) Create(_ context.Context, _ data.Metadata) (data.Metadata, error) {
 	return *mms.single, mms.returnError
 }
@@ -42,21 +46,8 @@ func (mms mockMetadataServer) Save(_ context.Context, _ data.Metadata) error {
 	return mms.returnError
 }
 
-
-type mockLocator struct {
-
-}
-
-func (ml mockLocator) Source() string {
-	return ""
-}
-
-func (ml mockLocator) Data() (io.ReadCloser, error) {
-	return nil, nil
-}
-
 func TestNewImageRepository(t *testing.T) {
-	ir := NewImageRepository(mockMetadataServer{})
+	var ir = NewImageRepository(mockMetadataServer{})
 	dir, ok := ir.(dataImageRepository)
 	if !ok {
 		t.Fatalf("Expected to cast to data image repository")
@@ -70,12 +61,12 @@ func TestNewImageRepository(t *testing.T) {
 func TestDataImageRepository_Find(t *testing.T) {
 	ir := NewImageRepository(mockMetadataServer{
 		results: []data.Metadata{
-			{ID: 1, Date: time.Now(), Location: "home", Tags: []string{"baz", "qux"}, Locator: []data.Locator{mockLocator{}}},
-			{ID: 2, Date: time.Now(), Location: "work", Tags: []string{"foo", "bar"}, Locator: []data.Locator{mockLocator{}}},
-			{ID: 3, Date: time.Now(), Location: "home", Tags: []string{"foo", "bar"}, Locator: []data.Locator{mockLocator{}}},
+			{ID: 1, Date: time.Now(), Location: "home", Tags: []string{"baz", "qux"}, Data: []data.Encoding{}},
+			{ID: 2, Date: time.Now(), Location: "work", Tags: []string{"foo", "bar"}, Data: []data.Encoding{}},
+			{ID: 3, Date: time.Now(), Location: "home", Tags: []string{"foo", "bar"}, Data: []data.Encoding{}},
 		},
 	})
-	qp := QueryParameters {}
+	qp := QueryParameters{}
 
 	images, err := ir.Find(context.Background(), qp)
 	if err != nil {

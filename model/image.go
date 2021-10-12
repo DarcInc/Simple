@@ -1,13 +1,12 @@
-package simple
+package model
 
 import (
-	"Simple/data"
 	"context"
 	"net/url"
 	"time"
+
+	"github.com/darcinc/Simple/data"
 )
-
-
 
 // Source indicates where an image exists.  For example,
 // the samge image may be both a TIFF stored in an AWS
@@ -19,6 +18,7 @@ type Source struct {
 	Location url.URL
 	// Resolution gives the width and the height of the encoded image
 	Resolution data.Resolution
+
 	// Encoding is the format in which the image is encoded as a
 	// mime type.  For example image/tiff, if it's a tiff.
 	Encoding data.MimeType
@@ -108,8 +108,8 @@ func (dir dataImageRepository) Find(ctx context.Context, qp QueryParameters) ([]
 			Location: metadata[i].Location,
 		}
 
-		result[i].Sources = make([]Source, len(metadata[i].Locator))
-		for l := range metadata[i].Locator {
+		result[i].Sources = make([]Source, len(metadata[i].Data))
+		for _ = range metadata[i].Data {
 			//result[i].Sources[l] = Source{Name: "foo"}
 		}
 	}
