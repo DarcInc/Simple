@@ -5,49 +5,27 @@ import (
 	"reflect"
 )
 
-// DependencyManager manages the data used to store the injectable dependencies.
-type DependencyManager struct {
-	// Todo: Cache constructed dependencies
-	// Todo: Some way of getting a singleton or goroutine reference to a dependency manager
-	// For example, we start a goroutine that encapsulates the dependency management and
-	// the reference to the Dependency Manager is a channel.
-	guts map[string]interface{}
+type Reflex struct {
+	guts  map[string]interface{}
+	types map[string]reflect.Type
 }
 
-// RegisterFactory registers factory functions that take multiple arguments, and the dependency manager
-// and return a constructed dependency.
-func (dm *DependencyManager) RegisterFactory(name string, factory interface{}) {
-	dm.guts[name] = factory
-}
-
-// Register registers either a concrete value (e.g. an int), a type that serves as a template for
-// creating a dependency, or a function that takes a dependency manager and returns a constructed
-// dependency.  The dependency can be looked up by its name.
-func (dm *DependencyManager) Register(name string, item interface{}) {
-	dm.guts[name] = item
-}
-
-// MakeInstance allows passing multiple parameters to a constructor that builds an object.
-func (dm DependencyManager) MakeInstance(name string, params ...interface{}) interface{} {
-	someFactory := dm.guts[name]
-
-	t, v := reflect.TypeOf(someFactory), reflect.ValueOf(someFactory)
-	if t.Kind() != reflect.Func {
-		panic("you failed to pass a function!")
+func NewReflex() Reflex {
+	return Reflex{
+		guts:  make(map[string]interface{}),
+		types: make(map[string]reflect.Type),
 	}
-
-	callArray := make([]reflect.Value, len(params))
-	for i, v := range params {
-		callArray[i] = reflect.ValueOf(v)
-	}
-
-	result := v.Call(callArray)[0]
-	fmt.Printf("Type of result: %v\n", result.Type())
-
-	return result.Interface()
 }
 
-func (dm DependencyManager) setByName(item reflect.Value, fieldName string, val interface{}) {
+func (dm *Reflex) Register(name string, item interface{}) {
+	if _, ok := item.(reflect.Type); ok {
+		dm.types[name] = item.(reflect.Type)
+	} else {
+		dm.guts[name] = item
+	}
+}
+
+func (dm Reflex) setByName(item reflect.Value, fieldName string, val interface{}) {
 	field := item.Elem().FieldByName(fieldName)
 
 	switch {
@@ -60,36 +38,62 @@ func (dm DependencyManager) setByName(item reflect.Value, fieldName string, val 
 	}
 }
 
-func (dm DependencyManager) setField(item reflect.Value, field reflect.StructField) {
+func (dm Reflex) setField(item reflect.Value, field reflect.StructField) {
 	injectFrom, ok := field.Tag.Lookup("inject")
 	var v interface{}
+	var found bool
 	if ok {
-		v = dm.GetInstance(injectFrom)
+		v, found = dm.Get(injectFrom)
 	} else {
-		v = dm.GetInstance(field.Name)
+		v, found = dm.Get(field.Name)
 	}
-	dm.setByName(item, field.Name, v)
+	if !found {
+		dm.setByName(item, field.Name, reflect.Zero(field.Type))
+	} else {
+		dm.setByName(item, field.Name, v)
+	}
 }
 
-// GetInstance returns the constructed object that is our dependency.
-func (dm DependencyManager) GetInstance(name string) interface{} {
-	anInstance, ok := dm.guts[name]
-	if !ok {
-		return nil
+func (dm Reflex) constructFromType(aType reflect.Type) (interface{}, bool) {
+	result := reflect.New(aType)
+	for i := 0; i < aType.NumField(); i++ {
+		dm.setField(result, aType.Field(i))
 	}
+	return result.Elem().Interface(), true
+}
 
+func (dm Reflex) returnValue(anInstance interface{}) (interface{}, bool) {
 	t, v := reflect.TypeOf(anInstance), reflect.ValueOf(anInstance)
 
 	if t.Kind() == reflect.Func {
 		results := v.Call([]reflect.Value{reflect.ValueOf(dm)})
-		return results[0].Interface()
+		return results[0].Interface(), results[1].Bool()
 	} else if t.Kind() == reflect.Struct {
-		result := reflect.New(t)
-		for i := 0; i < t.NumField(); i++ {
-			dm.setField(result, t.Field(i))
-		}
-		return result.Interface()
+		return anInstance, true
 	} else {
-		return anInstance
+		return anInstance, true
 	}
+}
+
+func (dm Reflex) Get(name string) (interface{}, bool) {
+	anInstance, ok := dm.guts[name]
+	if aType, hasType := dm.types[name]; !ok && hasType {
+		return dm.constructFromType(aType)
+	}
+
+	return dm.returnValue(anInstance)
+}
+
+func (dm Reflex) MustGet(name string) interface{} {
+	someAsset, ok := dm.Get(name)
+	if !ok {
+		panic(fmt.Sprintf("failed to find a registered value for %s", name))
+	}
+
+	return someAsset
+}
+
+func (dm Reflex) Inject(someType reflect.Type) interface{} {
+	result, _ := dm.constructFromType(someType)
+	return result
 }
