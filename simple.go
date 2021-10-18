@@ -1,5 +1,5 @@
 package simple
 
 const (
-	version = "0.0.1"
+	cversion = "0.0.1"
 )

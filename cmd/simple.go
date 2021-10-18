@@ -4,8 +4,10 @@ import (
 	simple "Simple/model"
 	"context"
 	"github.com/darcinc/Simple/data"
+	"github.com/darcinc/Simple/reflex"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 )
@@ -47,8 +49,25 @@ func findByLocationHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	DBURI := os.Getenv("DB_URI")
 
-	poolConfig, _ := pgxpool.ParseConfig(DBURI)
-	pool, _ := pgxpool.ConnectConfig(context.Background(), poolConfig)
+	poolConfig, err := pgxpool.ParseConfig(DBURI)
+	if err != nil {
+		log.Printf("Unable to connect to database: %v", err)
+		os.Exit(1)
+	}
+
+	pool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
+	if err != nil {
+		log.Printf("Unable to connect to database: %v", err)
+		os.Exit(1)
+
+
+	}
+
+	reflex := reflex.GlobalReflex()
+	reflex.Register("caller", func(dm reflex.Reflex) (interface{}, bool) {
+		return nil, true
+	})
+
 
 	caller := data.NewDBCaller(pool)              // 1 - application wide (stateless)
 	server := data.NewMetadataServer(caller)      // 1 - application wide (stateless)
