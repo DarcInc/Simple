@@ -15,14 +15,14 @@ type DBCaller interface {
 }
 
 type PGXDBCaller struct {
-	pool *pgxpool.Pool
+	pool *pgxpool.Conn
 }
 
 type PGXTxCaller struct {
 	trans pgx.Tx
 }
 
-func NewDBCaller(pool *pgxpool.Pool) DBCaller {
+func NewDBCaller(pool *pgxpool.Conn) DBCaller {
 	return PGXDBCaller{
 		pool: pool,
 	}
