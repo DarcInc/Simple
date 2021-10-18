@@ -5,6 +5,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
 )
 
 type DBCaller interface {
@@ -12,36 +13,41 @@ type DBCaller interface {
 	QueryRow(ctx context.Context, query string, params ...interface{}) pgx.Row
 	Exec(ctx context.Context, query string, params ...interface{}) (pgconn.CommandTag, error)
 	Begin(ctx context.Context) (DBCaller, error)
+	Release()
 }
 
 type PGXDBCaller struct {
-	pool *pgxpool.Conn
+	conn *pgxpool.Conn
 }
 
 type PGXTxCaller struct {
 	trans pgx.Tx
 }
 
-func NewDBCaller(pool *pgxpool.Conn) DBCaller {
+func NewDBCaller(conn *pgxpool.Conn) DBCaller {
 	return PGXDBCaller{
-		pool: pool,
+		conn: conn,
 	}
 }
 
 func (p PGXDBCaller) Query(ctx context.Context, query string, params ...interface{}) (pgx.Rows, error) {
-	return p.pool.Query(ctx, query, params...)
+	return p.conn.Query(ctx, query, params...)
 }
 
 func (p PGXDBCaller) QueryRow(ctx context.Context, query string, params ...interface{}) pgx.Row {
-	return p.pool.QueryRow(ctx, query, params...)
+	return p.conn.QueryRow(ctx, query, params...)
 }
 
 func (p PGXDBCaller) Exec(ctx context.Context, query string, params ...interface{}) (pgconn.CommandTag, error) {
-	return p.pool.Exec(ctx, query, params...)
+	return p.conn.Exec(ctx, query, params...)
+}
+
+func (p PGXDBCaller) Release() {
+	p.conn.Release()
 }
 
 func (p PGXDBCaller) Begin(ctx context.Context) (DBCaller, error) {
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.conn.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,4 +71,8 @@ func (p PGXTxCaller) Exec(ctx context.Context, query string, params ...interface
 
 func (p PGXTxCaller) Begin(ctx context.Context) (DBCaller, error) {
 	return p, nil
+}
+
+func (p PGXTxCaller) Release() {
+	log.Printf("Warning - calling release on a transaction")
 }

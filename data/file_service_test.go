@@ -15,7 +15,7 @@ func TestNewFileService(t *testing.T) {
 	if fsfs, ok := fileService.(fileSystemFileService); !ok {
 		t.Errorf("Did not return the correct underlying type")
 		if fsfs.db != mockDb {
-			t.Errorf("Expected nil for pool")
+			t.Errorf("Expected nil for conn")
 		}
 	}
 }
