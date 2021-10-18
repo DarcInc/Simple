@@ -27,23 +27,28 @@ package reflex
 import (
 	"fmt"
 	"reflect"
+	"sync"
 )
+
+var globalReflex *Reflex
+var oneTime sync.Once
+
+func GlobalReflex() *Reflex {
+	oneTime.Do(func() {
+		globalReflex = &Reflex{
+			guts:  make(map[string]interface{}),
+			types: make(map[string]reflect.Type),
+		}
+	})
+
+	return globalReflex
+}
 
 type Reflex struct {
 	guts  map[string]interface{}
 	types map[string]reflect.Type
 }
 
-// NewReflex constructs a new reflex.  It is up to the user to decide how to
-// manage references to a global object or to other classes.
-func NewReflex() Reflex {
-	return Reflex{
-		guts:  make(map[string]interface{}),
-		types: make(map[string]reflect.Type),
-	}
-}
-
-// Register a new type or value with the reflex.
 func (dm *Reflex) Register(name string, item interface{}) {
 	if _, ok := item.(reflect.Type); ok {
 		dm.types[name] = item.(reflect.Type)
@@ -102,8 +107,6 @@ func (dm Reflex) returnValue(anInstance interface{}) (interface{}, bool) {
 	}
 }
 
-// Get returns a value and a bool for a previously registered value, type, or function.
-// If there is no matching type, value, or function, then Get returns `nil` and `false`.
 func (dm Reflex) Get(name string) (interface{}, bool) {
 	anInstance, ok := dm.guts[name]
 	if aType, hasType := dm.types[name]; !ok && hasType {
@@ -113,9 +116,6 @@ func (dm Reflex) Get(name string) (interface{}, bool) {
 	return dm.returnValue(anInstance)
 }
 
-// MustGet returns a value for a given name.  If no such value has been registered, it
-// panics.  This is useful for key values that are required for the system to run.
-// Otherwise, uset `Get` and test the values as appropriate for a safer experience.
 func (dm Reflex) MustGet(name string) interface{} {
 	someAsset, ok := dm.Get(name)
 	if !ok {
@@ -125,7 +125,6 @@ func (dm Reflex) MustGet(name string) interface{} {
 	return someAsset
 }
 
-// Inject takes a type and constructs an object based on those injected values.
 func (dm Reflex) Inject(someType reflect.Type) interface{} {
 	result, _ := dm.constructFromType(someType)
 	return result

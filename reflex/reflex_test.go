@@ -6,13 +6,12 @@ func TestDependencyManager_GetInstanceSimpleTypes(t *testing.T) {
 	dm := Reflex{guts: make(map[string]interface{})}
 
 	var shortInt int16 = 20
-	var regularInt int = 21
+	var regularInt = 21
 	var bigInt int64 = 22
-	var someString string = "Hello World"
+	var someString = "Hello World"
 	var shortFloat float32 = 2.3
-	var regularFloat float64 = 3.4
-	var someRune rune = 'A'
-	var someBool bool = true
+	var regularFloat = 3.4
+	var someRune = 'A'
 
 	dm.Register("shortInt", shortInt)
 	dm.Register("regularInt", regularInt)
@@ -21,7 +20,7 @@ func TestDependencyManager_GetInstanceSimpleTypes(t *testing.T) {
 	dm.Register("shortFloat", shortFloat)
 	dm.Register("regularFloat", regularFloat)
 	dm.Register("someRune", someRune)
-	dm.Register("someBool", someBool)
+	dm.Register("someBool", true)
 
 	if val, ok := dm.MustGet("shortInt").(int16); !ok || val != shortInt {
 		t.Errorf("Expected short integer but got %v %d\n", ok, val)
@@ -51,7 +50,7 @@ func TestDependencyManager_GetInstanceSimpleTypes(t *testing.T) {
 		t.Errorf("Expected rune but got %v %d\n", ok, val)
 	}
 
-	if val, ok := dm.MustGet("someBool").(bool); !ok || val != someBool {
+	if val, ok := dm.MustGet("someBool").(bool); !ok || !val {
 		t.Errorf("Expected bool but got %v %v\n", ok, val)
 	}
 }

@@ -12,7 +12,7 @@ You may still want to wrap its functions so that you don't have to worry about c
 
 ## Example Usage
 
-```Go
+```golang
 package myPackage
 
 import (
@@ -22,7 +22,7 @@ import (
 
 func main() {
 	reflex :=  reflex.NewReflex()
-    reflex.Register("Message", "Say Hello")
+	reflex.Register("Message", "Say Hello")
 	reflex.Register("Times", 5)
 	
 	http.Handle("/", MyHandler{R: reflex})
@@ -38,7 +38,7 @@ func (mh MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	
 	for i := 0; i < repeat; i++ {
 		w.Write([]byte(message))
-    }
+	}
 }
 
 ```
