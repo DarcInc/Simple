@@ -9,6 +9,8 @@ github.com/darcinc/Simple/data v0.0.0-20211001133342-b353eb5866fe h1:yjtYWgH+OHA
 github.com/darcinc/Simple/data v0.0.0-20211001133342-b353eb5866fe/go.mod h1:kSYiqnLfYUPR0AGqGznyFRfDOp+8qG6dpPM+zvQRd1Q=
 github.com/darcinc/Simple/data v0.0.0-20211018114019-67704ab1c7d3 h1:2vMjKENIoUa9+5h2bBSkaV7gXd4au6+xye2sA/1MvQM=
 github.com/darcinc/Simple/data v0.0.0-20211018114019-67704ab1c7d3/go.mod h1:kSYiqnLfYUPR0AGqGznyFRfDOp+8qG6dpPM+zvQRd1Q=
+github.com/darcinc/Simple/data v0.0.0-20211018120450-199b6dcab67b h1:EIAt5BXnLZw6YXLsS0a3ssePtasz66XP1nPlapE0d6Y=
+github.com/darcinc/Simple/data v0.0.0-20211018120450-199b6dcab67b/go.mod h1:kSYiqnLfYUPR0AGqGznyFRfDOp+8qG6dpPM+zvQRd1Q=
 github.com/darcinc/Simple/model v0.0.0-20211018114019-67704ab1c7d3 h1:RXCfVJeX474RB2M/1AxQBcDPtRJBkakfsLbGpPjx39w=
 github.com/darcinc/Simple/model v0.0.0-20211018114019-67704ab1c7d3/go.mod h1:0VzMDX9Vw1ZTR4dflZxWR5yWhkLAu2jMQNED4f3HaX4=
 github.com/darcinc/Simple/reflex v0.0.0-20211018114019-67704ab1c7d3 h1:nBNBDs+Lf6/aS97dTHXISw4YYtaycVBYdFajJEOqEnE=

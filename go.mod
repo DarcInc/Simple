@@ -3,7 +3,7 @@ module Simple
 go 1.17
 
 require (
-	github.com/darcinc/Simple/data v0.0.0-20211018114019-67704ab1c7d3
+	github.com/darcinc/Simple/data v0.0.0-20211018120450-199b6dcab67b
 	github.com/darcinc/Simple/reflex v0.0.0-20211018114019-67704ab1c7d3
 	github.com/jackc/pgx/v4 v4.13.0
 )
