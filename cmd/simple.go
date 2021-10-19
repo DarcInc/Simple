@@ -11,22 +11,7 @@ import (
 	"time"
 )
 
-func main() {
-	DBURI := os.Getenv("DB_URI")
-
-	poolConfig, err := pgxpool.ParseConfig(DBURI)
-	if err != nil {
-		log.Printf("Unable to connect to database: %v", err)
-		os.Exit(1)
-	}
-
-	pool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
-	if err != nil {
-		log.Printf("Unable to connect to database: %v", err)
-		os.Exit(1)
-
-	}
-
+func initSystem(pool *pgxpool.Pool) {
 	r := reflex.GlobalReflex()
 
 	r.Register("timeout", 15*time.Second)
@@ -65,7 +50,6 @@ func main() {
 
 		return data.NewMetadataServer(caller), true
 	})
-
 	r.Register("imageRepository", func(dm reflex.Reflex) (interface{}, bool) {
 		metadataService, ok := dm.MustGet("metadataService").(data.MetadataServer)
 		if !ok {
@@ -75,4 +59,23 @@ func main() {
 
 		return model.NewImageRepository(metadataService), true
 	})
+}
+
+func main() {
+	DBURI := os.Getenv("DB_URI")
+
+	poolConfig, err := pgxpool.ParseConfig(DBURI)
+	if err != nil {
+		log.Printf("Unable to connect to database: %v", err)
+		os.Exit(1)
+	}
+
+	pool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
+	if err != nil {
+		log.Printf("Unable to connect to database: %v", err)
+		os.Exit(1)
+
+	}
+
+	initSystem(pool)
 }
