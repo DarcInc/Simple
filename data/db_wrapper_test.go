@@ -22,3 +22,11 @@ func (tdbc *TestDBCaller) QueryRow(ctx context.Context, query string, params ...
 func (tdbc *TestDBCaller) Exec(ctx context.Context, query string, params ...interface{}) (pgconn.CommandTag, error) {
 	return tdbc.Conn.Exec(ctx, query, params...)
 }
+
+func (tdbc *TestDBCaller) Begin(ctx context.Context) (DBCaller, error) {
+	return tdbc, nil
+}
+
+func (tdbc *TestDBCaller) Release() {
+
+}
